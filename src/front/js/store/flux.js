@@ -1,52 +1,67 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
-			message: null,
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				}
-			]
+			films: [],
+			modal: null,
+			authToken: ''
 		},
 		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
+			onLogin: () => {
+				setStore({ modal: 'login' })
 			},
+			onRegister: () => {
+				setStore({ modal: 'register' })
+			},
+			handlerLogin: async (body) => {
+				try {
+					const auth = await fetch(`${process.env.BACKEND_URL}api/auth`, {
+						method: 'POST',
+						body: JSON.stringify(body),
+						headers: {
+							'Content-Type': 'application/json'
+						}
+					})
 
-			getMessage: async () => {
-				try{
-					// fetching data from the backend
-					const resp = await fetch(process.env.BACKEND_URL + "/api/hello")
-					const data = await resp.json()
-					setStore({ message: data.message })
-					// don't forget to return something, that is how the async resolves
-					return data;
-				}catch(error){
-					console.log("Error loading message from backend", error)
+					if (!auth.ok) throw Error();
+
+					const authJson = await auth.json();
+
+					setStore({ authToken: authJson.token })
+					localStorage.setItem('token', authJson.token)
+					console.log(authJson);
+				} catch {
+					console.log('Error')
 				}
 			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
+			handlerRegister: async (body) => {
+				try {
+					const register = await fetch(`${process.env.BACKEND_URL}api/signup`, {
+						method: 'POST',
+						body: JSON.stringify(body),
+						headers: {
+							'Content-Type': 'application/json'
+						}
+					})
 
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
+					if (!register.ok) throw Error();
 
-				//reset the global store
-				setStore({ demo: demo });
-			}
+					const registerJson = await register.json();
+					console.log(registerJson);
+				} catch {
+					console.log('Error')
+				}
+
+
+			},
+			onRemoveModal: () => {
+				setStore({ modal: null })
+			},
+			getFilms: async () => {
+				await fetch('https://swapi.py4e.com/api/films/')
+					.then(result => result.json())
+					.then(results => setStore({ films: results.results }))
+			},
+
 		}
 	};
 };
